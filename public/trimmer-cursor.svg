@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <defs>
+    <filter id="trimmer-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="1" dy="1.5" stdDeviation="1" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <g filter="url(#trimmer-shadow)">
+    <!-- Hanging Loop / Base Hook -->
+    <path d="M24 24 C26 26 28 26 29 25 C30 24 30 22 28 20" stroke="#8f6e39" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+
+    <!-- Trimmer Main Body (Ergonomic luxury cylinder) -->
+    <path d="M10 12 L21 23 C22.5 24.5 24.5 24 25.5 23 C26.5 22 27 20 25.5 18.5 L14.5 7.5 Z" fill="#1c1b18" stroke="#33312c" stroke-width="0.8"/>
+
+    <!-- Body Spine / Highlight -->
+    <path d="M11 11 L23 23" stroke="#5a564e" stroke-width="1" stroke-linecap="round"/>
+
+    <!-- Diamond Grip Knurling (Warm Gold Textures) -->
+    <path d="M16 19 L19 16" stroke="#8f6e39" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M18 21 L21 18" stroke="#8f6e39" stroke-width="1.2" stroke-linecap="round"/>
+
+    <!-- Gold Accent Band -->
+    <path d="M12.5 14.5 L15 12" stroke="#d8c39e" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- Power Switch LED -->
+    <circle cx="17.5" cy="14" r="1" fill="#8f6e39"/>
+
+    <!-- T-Blade Head Neck Flare -->
+    <path d="M10 12 L5 11 L2 8 L8 2 L11 5 L12 10 Z" fill="#2d2b27" stroke="#1c1b18" stroke-width="0.8"/>
+
+    <!-- Gold Blade Backplate -->
+    <path d="M3.5 9.5 L9.5 3.5" stroke="#8f6e39" stroke-width="2.5" stroke-linecap="round"/>
+
+    <!-- Precision Clipper Comb Teeth (Angled along the cutting edge toward top-left) -->
+    <!-- Clipper base plate -->
+    <path d="M2 8 L8 2" stroke="#1c1b18" stroke-width="2.6" stroke-linecap="round"/>
+    <!-- Micro teeth serrations -->
+    <path d="M1.5 7.5 L2 6.5 M3 6 L3.5 5 M4.5 4.5 L5 3.5 M6 3 L6.5 2 M7.5 1.5 L8 0.5" stroke="#f0ebe1" stroke-width="1.2" stroke-linecap="round"/>
+    <!-- Gold cutting edge blade -->
+    <path d="M1.5 7.5 L7.5 1.5" stroke="#c5a059" stroke-width="1.2" stroke-linecap="round"/>
+
+    <!-- Leading Precision Blade Tooth (Tip at hotspot 2, 2) -->
+    <circle cx="2" cy="2" r="1.1" fill="#ffffff" stroke="#c5a059" stroke-width="0.7"/>
+  </g>
+</svg>
