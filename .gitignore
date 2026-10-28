@@ -13,7 +13,7 @@ dist-ssr
 *.local
 .vercel
 scratch/
-female_movements_updated/
+/female_movements_updated/
 
 # Editor directories and files
 .vscode/*
