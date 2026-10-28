@@ -1,8 +1,37 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 
-const MIN_FRAME = 55; // Female looking extreme left
-const MAX_FRAME = 155; // Female looking extreme right
-const CENTER_FRAME = 105; // Female looking dead center forward
+type GazeDirection = 'center' | 'left' | 'right' | 'up' | 'down';
+
+const CENTER_FRAME = 1;
+
+// Calibrated 4-directional trajectories in female_movements_all_side
+const TRAJECTORIES = {
+  left: { center: 20, peak: 62 },
+  right: { center: 90, peak: 128 },
+  up: { center: 155, peak: 180 },
+  down: { center: 215, peak: 235 },
+};
+
+// Phase 1: High-priority keyframes for instantaneous 60fps interaction
+const PHASE_1_FRAMES = [
+  CENTER_FRAME,
+  // Left trajectory (center to extreme left)
+  20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 62,
+  // Right trajectory (center to extreme right)
+  90, 94, 98, 102, 106, 110, 114, 118, 122, 126, 128,
+  // Up trajectory (center to extreme up)
+  155, 159, 163, 167, 171, 175, 178, 180,
+  // Down trajectory (center to extreme down)
+  215, 219, 223, 227, 231, 235,
+];
+
+// Phase 2: In-between precision frames
+const PHASE_2_FRAMES: number[] = [];
+for (let i = 1; i <= 245; i++) {
+  if (!PHASE_1_FRAMES.includes(i)) {
+    PHASE_2_FRAMES.push(i);
+  }
+}
 
 interface InteractiveFemaleGazeProps {
   className?: string;
@@ -19,18 +48,28 @@ export const InteractiveFemaleGaze: React.FC<InteractiveFemaleGazeProps> = ({
 
   // References to keep animation loop 60+ FPS without re-renders
   const imagesRef = useRef<Map<number, HTMLImageElement>>(new Map());
-  const currentFrameRef = useRef<number>(CENTER_FRAME);
-  const targetFrameRef = useRef<number>(CENTER_FRAME);
   const lastDrawnFrameRef = useRef<number>(-1);
+  const lastDrawnCoordsRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const idleTimerRef = useRef<number | null>(null);
   const animFrameIdRef = useRef<number | null>(null);
 
-  // Helper to format frame path from the updated high-headroom asset set
+  // 2D Tracking & Motion State
+  const targetXRef = useRef<number>(0);
+  const targetYRef = useRef<number>(0);
+  const currentXRef = useRef<number>(0);
+  const currentYRef = useRef<number>(0);
+  const scrollBiasYRef = useRef<number>(0);
+
+  const activeDirectionRef = useRef<GazeDirection>('center');
+  const activeIntensityRef = useRef<number>(0);
+  const currentDominantRef = useRef<'horizontal' | 'vertical'>('horizontal');
+
+  // Helper to format frame path from female_movements_all_side
   const getFrameSrc = useCallback((frameNumber: number) => {
-    return `/female_movements_updated/ezgif-frame-${String(frameNumber).padStart(3, '0')}.jpg`;
+    return `/female_movements_all_side/ezgif-frame-${String(frameNumber).padStart(3, '0')}.jpg`;
   }, []);
 
-  // Helper to retrieve the closest loaded frame
+  // Helper to retrieve the closest loaded frame from cache
   const getClosestLoadedImage = useCallback((targetNum: number): HTMLImageElement | null => {
     const cache = imagesRef.current;
     if (cache.has(targetNum)) {
@@ -49,9 +88,9 @@ export const InteractiveFemaleGaze: React.FC<InteractiveFemaleGazeProps> = ({
     return cache.get(closestNum) || null;
   }, []);
 
-  // Draw image with proper headroom and studio backdrop match
+  // Draw image with proper headroom, studio backdrop match, and subtle 2D sub-pixel parallax
   const renderFrame = useCallback(
-    (frameNum: number) => {
+    (frameNum: number, curX: number, curY: number) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -70,9 +109,18 @@ export const InteractiveFemaleGaze: React.FC<InteractiveFemaleGazeProps> = ({
       const scale = 0.88;
       const renderHeight = Math.floor(canvasHeight * scale);
       const renderWidth = Math.floor(renderHeight * imgRatio);
-      const offsetX = Math.floor((canvasWidth - renderWidth) / 2);
-      // Position photo top at 7% from canvas top, giving comfortable headroom above her hair
-      const offsetY = Math.floor(canvasHeight * 0.07);
+
+      // Base centered position with comfortable headroom
+      const baseOffsetX = Math.floor((canvasWidth - renderWidth) / 2);
+      const baseOffsetY = Math.floor(canvasHeight * 0.07);
+
+      // Subtle 2D sub-pixel micro-parallax:
+      // Adds tactile physical depth across both X and Y axes
+      const parallaxX = Math.round(curX * 10);
+      const parallaxY = Math.round(curY * 8);
+
+      const offsetX = baseOffsetX + parallaxX;
+      const offsetY = baseOffsetY + parallaxY;
 
       // Fill canvas with studio neutral tone matching photo top edge (RGB 234, 227, 217)
       ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -82,6 +130,7 @@ export const InteractiveFemaleGaze: React.FC<InteractiveFemaleGazeProps> = ({
       // Draw the high-definition frame
       ctx.drawImage(img, offsetX, offsetY, renderWidth, renderHeight);
       lastDrawnFrameRef.current = frameNum;
+      lastDrawnCoordsRef.current = { x: parallaxX, y: parallaxY };
     },
     [getClosestLoadedImage]
   );
@@ -100,8 +149,7 @@ export const InteractiveFemaleGaze: React.FC<InteractiveFemaleGazeProps> = ({
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width;
       canvas.height = height;
-      const current = Math.round(currentFrameRef.current);
-      renderFrame(current);
+      renderFrame(lastDrawnFrameRef.current > 0 ? lastDrawnFrameRef.current : CENTER_FRAME, currentXRef.current, currentYRef.current);
     }
   }, [renderFrame]);
 
@@ -109,7 +157,7 @@ export const InteractiveFemaleGaze: React.FC<InteractiveFemaleGazeProps> = ({
   useEffect(() => {
     let isMounted = true;
 
-    // 1. Immediately load the center hero image (Frame 150)
+    // 1. Immediately load the center hero image (Frame 1)
     const initialImg = new Image();
     initialImg.src = getFrameSrc(CENTER_FRAME);
     initialImg.onload = () => {
@@ -118,22 +166,6 @@ export const InteractiveFemaleGaze: React.FC<InteractiveFemaleGazeProps> = ({
       setIsReady(true);
       handleResize();
     };
-
-    // 2. Preload Phase 1: Keyframes every 2nd frame for instant 60fps tracking coverage
-    const phase1Frames: number[] = [];
-    for (let i = MIN_FRAME; i <= MAX_FRAME; i += 2) {
-      if (i !== CENTER_FRAME) {
-        phase1Frames.push(i);
-      }
-    }
-
-    // 3. Preload Phase 2: In-between odd frames
-    const phase2Frames: number[] = [];
-    for (let i = MIN_FRAME + 1; i <= MAX_FRAME; i += 2) {
-      if (i !== CENTER_FRAME) {
-        phase2Frames.push(i);
-      }
-    }
 
     const loadBatch = (frames: number[], onDone?: () => void) => {
       let loaded = 0;
@@ -161,10 +193,10 @@ export const InteractiveFemaleGaze: React.FC<InteractiveFemaleGazeProps> = ({
       });
     };
 
-    // Start Phase 1, then chain Phase 2
-    loadBatch(phase1Frames, () => {
+    // Phase 1 (instant keyframes), then Phase 2 (in-between precision frames)
+    loadBatch(PHASE_1_FRAMES, () => {
       if (isMounted) {
-        loadBatch(phase2Frames);
+        loadBatch(PHASE_2_FRAMES);
       }
     });
 
@@ -190,59 +222,98 @@ export const InteractiveFemaleGaze: React.FC<InteractiveFemaleGazeProps> = ({
     };
   }, [handleResize]);
 
-  // Mouse and touch interaction listeners
+  // 2D Mouse, Touch, and Scroll interaction listeners
   useEffect(() => {
-    const updateTargetFromCoord = (clientX: number) => {
+    const updateTargetFromCoordinates = (clientX: number, clientY: number) => {
       const windowWidth = window.innerWidth || 1;
+      const windowHeight = window.innerHeight || 1;
       let centerX = windowWidth / 2;
-      let halfSpan = windowWidth * 0.38;
+      let centerY = windowHeight * 0.45;
+      let halfSpanX = windowWidth * 0.38;
+      let halfSpanY = windowHeight * 0.38;
 
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         centerX = rect.left + rect.width / 2;
-        // halfSpan: allows natural, responsive head sweep across container with smooth extension
-        halfSpan = Math.max(rect.width * 0.75, windowWidth * 0.35);
+        centerY = rect.top + rect.height * 0.42; // Center on model's eyes
+        halfSpanX = Math.max(rect.width * 0.8, windowWidth * 0.35);
+        halfSpanY = Math.max(rect.height * 0.7, windowHeight * 0.35);
       }
 
-      const rawDelta = (clientX - centerX) / halfSpan;
-      const normalizedDelta = Math.max(-1, Math.min(1, rawDelta));
+      const rawDeltaX = (clientX - centerX) / halfSpanX;
+      const rawDeltaY = (clientY - centerY) / halfSpanY;
 
-      // Map normalized delta [-1, 1] across [55, 105, 155]
-      // -1 -> 55 (left), 0 -> 105 (center), +1 -> 155 (right)
-      const mappedFrame = CENTER_FRAME + normalizedDelta * (MAX_FRAME - CENTER_FRAME);
-      targetFrameRef.current = mappedFrame;
+      targetXRef.current = Math.max(-1, Math.min(1, rawDeltaX));
+      targetYRef.current = Math.max(-1, Math.min(1, rawDeltaY));
 
       // Reset idle timer: Return softly to center after 3.5s of no pointer movement
       if (idleTimerRef.current) {
         window.clearTimeout(idleTimerRef.current);
       }
       idleTimerRef.current = window.setTimeout(() => {
-        targetFrameRef.current = CENTER_FRAME;
+        targetXRef.current = 0;
+        targetYRef.current = 0;
       }, 3500);
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-      updateTargetFromCoord(e.clientX);
+      updateTargetFromCoordinates(e.clientX, e.clientY);
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length > 0) {
-        updateTargetFromCoord(e.touches[0].clientX);
+        updateTargetFromCoordinates(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+
+    // Scroll listener: Gaze responds to scrolling up and down through content
+    const handleScroll = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || 1;
+
+      // When hero is visible, bias gaze based on viewport scroll position
+      if (rect.bottom > 0 && rect.top < viewportHeight) {
+        const containerCenterY = rect.top + rect.height / 2;
+        const viewportCenterY = viewportHeight / 2;
+        // As user scrolls down, container moves up relative to viewport center,
+        // so model's gaze looks downward toward the rest of the page
+        const scrollDeltaY = (viewportCenterY - containerCenterY) / (viewportHeight * 0.6);
+        scrollBiasYRef.current = Math.max(-0.6, Math.min(0.6, scrollDeltaY));
+      } else {
+        scrollBiasYRef.current = 0;
       }
     };
 
     const handleMouseLeave = () => {
       // Gently return to center gaze when pointer leaves window
-      targetFrameRef.current = CENTER_FRAME;
+      targetXRef.current = 0;
+      targetYRef.current = 0;
+    };
+
+    // Device orientation for mobile tilt (if available)
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      if (e.gamma !== null && e.beta !== null) {
+        // gamma: left-to-right tilt in [-90, 90]
+        // beta: front-to-back tilt in [-180, 180] (typical portrait hold is ~35-55)
+        const tiltX = Math.max(-1, Math.min(1, e.gamma / 25));
+        const tiltY = Math.max(-1, Math.min(1, (e.beta - 45) / 25));
+        targetXRef.current = tiltX;
+        targetYRef.current = tiltY;
+      }
     };
 
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
     window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('deviceorientation', handleOrientation, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('deviceorientation', handleOrientation);
       document.removeEventListener('mouseleave', handleMouseLeave);
       if (idleTimerRef.current) {
         window.clearTimeout(idleTimerRef.current);
@@ -250,27 +321,89 @@ export const InteractiveFemaleGaze: React.FC<InteractiveFemaleGazeProps> = ({
     };
   }, []);
 
-  // Buttery-smooth animation loop using linear interpolation (lerp)
+  // 60+ FPS Animation loop using 2D continuous coordinates and smooth trajectory transitions
   useEffect(() => {
     let isActive = true;
 
     const animate = () => {
       if (!isActive) return;
 
-      const current = currentFrameRef.current;
-      const target = targetFrameRef.current;
-      const diff = target - current;
+      const targetX = targetXRef.current;
+      const targetY = Math.max(-1, Math.min(1, targetYRef.current + scrollBiasYRef.current));
 
-      // Smooth damping factor (0.13 gives a very natural human head turn)
-      if (Math.abs(diff) > 0.05) {
-        currentFrameRef.current = current + diff * 0.13;
-      } else {
-        currentFrameRef.current = target;
+      // Smooth coordinate damping (0.14 gives a natural, responsive human head turn)
+      currentXRef.current += (targetX - currentXRef.current) * 0.14;
+      currentYRef.current += (targetY - currentYRef.current) * 0.14;
+
+      const curX = currentXRef.current;
+      const curY = currentYRef.current;
+      const absX = Math.abs(curX);
+      const absY = Math.abs(curY);
+      const hypot = Math.hypot(curX, curY);
+
+      let desiredDir: GazeDirection = 'center';
+      let desiredIntensity = 0;
+
+      if (hypot >= 0.06) {
+        // Hysteresis on diagonal boundary (1.25x) prevents rapid flickering
+        if (currentDominantRef.current === 'horizontal') {
+          if (absY > absX * 1.25) {
+            currentDominantRef.current = 'vertical';
+          }
+        } else {
+          if (absX > absY * 1.25) {
+            currentDominantRef.current = 'horizontal';
+          }
+        }
+
+        if (currentDominantRef.current === 'horizontal') {
+          desiredDir = curX < 0 ? 'left' : 'right';
+          desiredIntensity = Math.min(1, absX);
+        } else {
+          desiredDir = curY < 0 ? 'up' : 'down';
+          desiredIntensity = Math.min(1, absY);
+        }
       }
 
-      const frameToRender = Math.round(currentFrameRef.current);
-      if (frameToRender !== lastDrawnFrameRef.current) {
-        renderFrame(frameToRender);
+      // Seamless directional transition:
+      // When direction changes, gracefully ease intensity down through center (0) before opening the new direction
+      if (activeDirectionRef.current === desiredDir) {
+        activeIntensityRef.current += (desiredIntensity - activeIntensityRef.current) * 0.18;
+      } else {
+        activeIntensityRef.current += (0 - activeIntensityRef.current) * 0.25;
+        if (activeIntensityRef.current < 0.05) {
+          activeDirectionRef.current = desiredDir;
+          activeIntensityRef.current = 0.05;
+        }
+      }
+
+      // Map active direction and intensity to exact calibrated frame
+      const dir = activeDirectionRef.current;
+      const t = Math.max(0, Math.min(1, activeIntensityRef.current));
+      let frameToRender = CENTER_FRAME;
+
+      if (dir === 'left') {
+        frameToRender = Math.round(TRAJECTORIES.left.center + t * (TRAJECTORIES.left.peak - TRAJECTORIES.left.center));
+      } else if (dir === 'right') {
+        frameToRender = Math.round(TRAJECTORIES.right.center + t * (TRAJECTORIES.right.peak - TRAJECTORIES.right.center));
+      } else if (dir === 'up') {
+        frameToRender = Math.round(TRAJECTORIES.up.center + t * (TRAJECTORIES.up.peak - TRAJECTORIES.up.center));
+      } else if (dir === 'down') {
+        frameToRender = Math.round(TRAJECTORIES.down.center + t * (TRAJECTORIES.down.peak - TRAJECTORIES.down.center));
+      } else {
+        frameToRender = CENTER_FRAME;
+      }
+
+      const parallaxX = Math.round(curX * 10);
+      const parallaxY = Math.round(curY * 8);
+
+      // Only re-draw canvas when either frame or sub-pixel coordinate changes
+      if (
+        frameToRender !== lastDrawnFrameRef.current ||
+        parallaxX !== lastDrawnCoordsRef.current.x ||
+        parallaxY !== lastDrawnCoordsRef.current.y
+      ) {
+        renderFrame(frameToRender, curX, curY);
       }
 
       animFrameIdRef.current = requestAnimationFrame(animate);

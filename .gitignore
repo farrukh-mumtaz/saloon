@@ -14,6 +14,7 @@ dist-ssr
 .vercel
 scratch/
 /female_movements_updated/
+/female_movements_all_side/
 
 # Editor directories and files
 .vscode/*
