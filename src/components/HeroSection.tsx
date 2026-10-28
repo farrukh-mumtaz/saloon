@@ -9,43 +9,6 @@ interface HeroSectionProps {
   onExploreServices: () => void;
 }
 
-// Decorative Monstera Leaf Component
-const MonsteraLeaf: React.FC<{ className?: string; style?: React.CSSProperties }> = ({
-  className = '',
-  style = {},
-}) => (
-  <svg
-    viewBox="0 0 260 300"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={`pointer-events-none drop-shadow-2xl select-none ${className}`}
-    style={style}
-  >
-    <defs>
-      <linearGradient id="monstera-grad" x1="30" y1="20" x2="230" y2="280" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#43a047" />
-        <stop offset="50%" stopColor="#2e7d32" />
-        <stop offset="100%" stopColor="#1b5e20" />
-      </linearGradient>
-    </defs>
-    {/* Monstera Cutout Silhouette */}
-    <path
-      d="M130 270 C125 230 115 170 130 30 C140 35 160 45 185 65 C170 75 150 82 135 86 C165 95 205 110 220 140 C195 148 170 140 145 135 C175 155 210 180 215 215 C185 210 165 195 140 180 C155 205 160 235 150 260 C140 265 135 268 130 270 Z"
-      fill="url(#monstera-grad)"
-    />
-    <path
-      d="M130 270 C135 230 145 170 130 30 C120 35 100 45 75 65 C90 75 110 82 125 86 C95 95 55 110 40 140 C65 148 90 140 115 135 C85 155 50 180 45 215 C75 210 95 195 120 180 C105 205 100 235 110 260 C120 265 125 268 130 270 Z"
-      fill="url(#monstera-grad)"
-    />
-    {/* Veins */}
-    <path d="M130 290 Q128 160 130 25" stroke="#a5d6a7" strokeWidth="3.5" strokeLinecap="round" opacity="0.8" />
-    <path d="M130 90 Q160 80 185 70" stroke="#a5d6a7" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-    <path d="M130 90 Q100 80 75 70" stroke="#a5d6a7" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-    <path d="M130 140 Q175 130 210 125" stroke="#a5d6a7" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-    <path d="M130 140 Q85 130 50 125" stroke="#a5d6a7" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-  </svg>
-);
-
 // Chevron Wave Pattern matching reference image
 const ChevronWavePattern: React.FC<{ className?: string }> = ({ className = '' }) => (
   <svg
@@ -108,9 +71,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       <DiamondAccent className="absolute top-10 right-16 hidden md:block" />
       <DiamondAccent className="absolute bottom-16 left-16 hidden md:block" />
 
-      {/* Monstera Leaves Overlapping Canvas */}
-      <MonsteraLeaf className="absolute -top-10 -left-8 w-32 xs:w-44 sm:w-64 lg:w-80 rotate-[35deg] z-20" />
-      <MonsteraLeaf className="absolute -bottom-12 -right-8 w-36 xs:w-48 sm:w-72 lg:w-96 -rotate-[45deg] z-20" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
         
@@ -306,8 +266,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 />
               </div>
 
-              {/* Overlapping Floating Monstera Leaf on Right Edge */}
-              <MonsteraLeaf className="absolute -bottom-6 -right-4 w-28 xs:w-36 sm:w-52 lg:w-64 rotate-[15deg] z-20 pointer-events-none" />
             </div>
 
           </div>
