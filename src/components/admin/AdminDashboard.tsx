@@ -24,6 +24,7 @@ import {
   Star,
   UserPlus,
   Scissors,
+  Ticket,
 } from 'lucide-react';
 import {
   getStoredAppointments,
@@ -54,6 +55,9 @@ import type {
 import { AppointmentModal } from './AppointmentModal';
 import { SpecialistModal } from './SpecialistModal';
 import { ServiceModal } from './ServiceModal';
+import { ClientCRMView } from './ClientCRMView';
+import { CouponManagerView } from './CouponManagerView';
+import { useLocalization } from '../../context/LocalizationContext';
 
 interface AdminDashboardProps {
   onExit: () => void;
@@ -96,12 +100,13 @@ const MonsteraLeaf: React.FC<{ className?: string; style?: React.CSSProperties }
 );
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
+  const { formatPrice } = useLocalization();
   // State: Appointments, Suites, Specialists, and Services
   const [appointments, setAppointments] = useState<AppointmentItem[]>(() => getStoredAppointments());
   const [suites, setSuites] = useState<SuiteItem[]>(() => getStoredSuites());
   const [specialists, setSpecialists] = useState<SpecialistItem[]>(() => getStoredSpecialists());
   const [services, setServices] = useState<ServiceItem[]>(() => getStoredServices());
-  const [activeTab, setActiveTab] = useState<'appointments' | 'schedule' | 'suites' | 'specialists' | 'services'>('appointments');
+  const [activeTab, setActiveTab] = useState<'appointments' | 'schedule' | 'suites' | 'specialists' | 'services' | 'clients' | 'coupons'>('appointments');
 
   // Filters & Search for Services Tab
   const [serviceCategoryFilter, setServiceCategoryFilter] = useState<string>('all');
@@ -567,7 +572,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
               <DollarSign className="w-4 h-4 text-[#0d2222]" />
             </div>
             <div className="text-2xl sm:text-3xl font-playfair-headline font-semibold text-[#0d2222]">
-              ${stats.revenue}
+              {formatPrice(stats.revenue)}
             </div>
             <p className="text-[11px] text-[#102e2e] mt-1">
               Active &amp; completed bookings
@@ -575,7 +580,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
           </div>
         </div>
 
-        {/* 3. TABS NAVIGATION (Appointments, Schedule & Calendars, Suites, Specialists) */}
+        {/* 3. TABS NAVIGATION */}
         <div className="border-b border-white/30 flex items-center justify-between overflow-x-auto no-scrollbar gap-2">
           <div className="flex items-center gap-1 sm:gap-2">
             <button
@@ -638,7 +643,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
               }`}
             >
               <Scissors className="w-3.5 h-3.5" />
-              <span>Treatment Menu &amp; Services ({services.length})</span>
+              <span>Treatment Menu ({services.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('clients')}
+              className={`px-4 sm:px-5 py-3 text-xs uppercase tracking-wider font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+                activeTab === 'clients'
+                  ? 'border-[#0d2222] text-[#0d2222] font-bold'
+                  : 'border-transparent text-[#0d2222]/70 hover:text-[#0d2222]'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5 text-blue-900" />
+              <span>Clients &amp; Journey CRM</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('coupons')}
+              className={`px-4 sm:px-5 py-3 text-xs uppercase tracking-wider font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+                activeTab === 'coupons'
+                  ? 'border-[#0d2222] text-[#0d2222] font-bold'
+                  : 'border-transparent text-[#0d2222]/70 hover:text-[#0d2222]'
+              }`}
+            >
+              <Ticket className="w-3.5 h-3.5 text-emerald-800" />
+              <span>Promotions &amp; Coupons</span>
             </button>
           </div>
         </div>
@@ -1867,6 +1896,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
             )}
           </div>
         )}
+
+        {/* 7. TAB 6: CLIENTS & JOURNEY CRM */}
+        {activeTab === 'clients' && <ClientCRMView />}
+
+        {/* 8. TAB 7: PROMOTIONS & COUPONS ENGINE */}
+        {activeTab === 'coupons' && <CouponManagerView />}
       </div>
 
       {/* 8. APPOINTMENT MODAL (ADD / EDIT / WALK-IN) */}

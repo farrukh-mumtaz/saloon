@@ -3,6 +3,7 @@ import { Clock, Search, ArrowRight } from 'lucide-react';
 import type { ServiceItem } from '../data/salonData';
 import { getStoredServices } from '../services/adminStorage';
 import { ScrollReveal } from './ScrollReveal';
+import { useLocalization } from '../context/LocalizationContext';
 
 interface ServicesSectionProps {
   onSelectService: (service: ServiceItem) => void;
@@ -15,6 +16,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
   onSelectService,
   onBookService,
 }) => {
+  const { convertPrice } = useLocalization();
   const [services, setServices] = useState<ServiceItem[]>(() => getStoredServices());
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -140,7 +142,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
                         {service.duration}
                       </span>
                       <span className="font-playfair-headline font-bold text-2xl text-[#0d2222]">
-                        {service.price}
+                        {convertPrice(service.price)}
                       </span>
                     </div>
 

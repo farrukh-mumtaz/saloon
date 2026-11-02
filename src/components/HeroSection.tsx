@@ -1,12 +1,15 @@
 import React from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Ticket, Building2 } from 'lucide-react';
 import { SALON_INFO } from '../data/salonData';
 import { InteractiveFemaleGaze } from './InteractiveFemaleGaze';
 import { ScrollReveal } from './ScrollReveal';
+import { useLocalization } from '../context/LocalizationContext';
 
 interface HeroSectionProps {
   onOpenBooking: () => void;
   onExploreServices: () => void;
+  onOpenPromotions?: () => void;
+  onOpenSaaS?: () => void;
 }
 
 // Chevron Wave Pattern matching reference image
@@ -58,7 +61,10 @@ const DiamondAccent: React.FC<{ className?: string }> = ({ className = '' }) => 
 export const HeroSection: React.FC<HeroSectionProps> = ({
   onOpenBooking,
   onExploreServices,
+  onOpenPromotions,
+  onOpenSaaS,
 }) => {
+  const { t } = useLocalization();
   return (
     <section
       id="hero"
@@ -175,7 +181,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </h1>
 
                   <p className="text-xs xs:text-sm sm:text-base text-[#123131] font-normal leading-relaxed max-w-md pt-0.5 sm:pt-1">
-                    If you're pursuing to relax your body and mind then pass by the spa and select from our private suites and bespoke massage treatments.
+                    {t('hero.subtitle')}
                   </p>
 
                   {/* Buttons matching reference: Crisp outline + sleek dark pill */}
@@ -184,17 +190,43 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       onClick={onExploreServices}
                       className="w-full xs:w-auto px-6 sm:px-8 py-3 sm:py-3.5 rounded-none sm:rounded-xs border-2 border-[#0d2222] text-[#0d2222] hover:bg-[#0d2222] hover:text-white transition-all duration-300 uppercase tracking-[0.2em] text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs inline-flex items-center justify-center text-center"
                     >
-                      <span>Read More</span>
+                      <span>{t('hero.ctaReadMore')}</span>
                     </button>
 
                     <button
                       onClick={onOpenBooking}
                       className="w-full xs:w-auto px-6 sm:px-8 py-3 sm:py-3.5 rounded-none sm:rounded-xs bg-[#0d2222] text-white hover:bg-[#1a4444] transition-all duration-300 uppercase tracking-[0.2em] text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-md inline-flex items-center justify-center gap-2 text-center"
                     >
-                      <span>Book Suite</span>
+                      <span>{t('hero.ctaBook')}</span>
                       <ArrowRight className="w-3.5 h-3.5 text-[#53b8b6]" />
                     </button>
                   </div>
+
+                  {/* Quick B2B & Offers Ribbon */}
+                  {(onOpenPromotions || onOpenSaaS) && (
+                    <div className="flex flex-wrap items-center gap-2 pt-2 text-[11px] font-bold text-[#0d2222]">
+                      {onOpenPromotions && (
+                        <button
+                          type="button"
+                          onClick={onOpenPromotions}
+                          className="px-2.5 py-1 rounded-full bg-white/30 hover:bg-white/50 border border-white/50 flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                        >
+                          <Ticket className="w-3 h-3 text-emerald-800" />
+                          <span>Special Vouchers (WELCOME20)</span>
+                        </button>
+                      )}
+                      {onOpenSaaS && (
+                        <button
+                          type="button"
+                          onClick={onOpenSaaS}
+                          className="px-2.5 py-1 rounded-full bg-white/30 hover:bg-white/50 border border-white/50 flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                        >
+                          <Building2 className="w-3 h-3 text-[#165a58]" />
+                          <span>Salon-as-a-Service Plans</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </ScrollReveal>
 
                 {/* Mobile-only horizontal social link row */}

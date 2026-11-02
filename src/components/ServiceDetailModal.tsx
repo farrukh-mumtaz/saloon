@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { X, Clock, Check, ShieldCheck, ArrowRight, Star, Heart, Sparkles } from 'lucide-react';
 import type { ServiceItem } from '../data/salonData';
 import { getSpecialistsForService } from '../services/adminStorage';
+import { useLocalization } from '../context/LocalizationContext';
 
 interface ServiceDetailModalProps {
   service: ServiceItem | null;
@@ -14,6 +15,7 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
   onClose,
   onBookService,
 }) => {
+  const { convertPrice } = useLocalization();
   const specialists = useMemo(() => {
     if (!service) return [];
     return getSpecialistsForService(service.id, service.category);
@@ -73,7 +75,7 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({
 
             <div className="text-right">
               <span className="text-[10px] uppercase tracking-wider text-[#0d2222]/80 block font-bold">Fixed Treatment Rate</span>
-              <span className="text-xl font-playfair-headline font-bold text-[#0d2222]">{service.price}</span>
+              <span className="text-xl font-playfair-headline font-bold text-[#0d2222]">{convertPrice(service.price)}</span>
             </div>
           </div>
 
